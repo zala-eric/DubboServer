@@ -1,0 +1,119 @@
+import org.gradle.plugins.ide.eclipse.model.Facet
+
+apply plugin:'java'
+version='0.1'
+apply plugin:'war'
+apply plugin:'eclipse-wtp'
+
+sourceCompatibility=1.8  // 设置 JDK 版本
+targetCompatibility=1.8  // 设置 JDK 版本
+
+webAppDirName = 'WebContent'  // 设置 WebApp 根目录
+
+repositories {
+	mavenCentral() // 中央库
+	//maven {url "http://202.105.139.120:8081/artifactory/repo"}  //自定义库地址
+}
+
+ext{  
+	springversion="4.1.1.RELEASE";
+	slf4jversion="1.7.5";
+}
+
+dependencies {
+	//spring begin
+	compile "org.springframework:spring-aop:${springversion}"
+	compile "org.springframework:spring-core:${springversion}"
+	compile "org.springframework:spring-beans:${springversion}"
+	compile "org.springframework:spring-context:${springversion}"
+	compile "org.springframework:spring-expression:${springversion}"
+	compile "org.springframework:spring-web:${springversion}"
+	compile "org.springframework:spring-webmvc:${springversion}"
+	//spring end 
+	
+	//log begin
+	compile "log4j:log4j:1.2.17"
+	compile "org.slf4j:slf4j-api:${slf4jversion}"
+	compile "org.slf4j:slf4j-log4j12:${slf4jversion}"
+	//log end
+	
+	
+	//dubbo
+	compile ("com.alibaba:dubbo:2.5.3"){
+         exclude group: "org.springframework"
+    }
+	//zkclient
+	compile "com.101tec:zkclient:0.4"
+	//zookeeper
+	compile "org.apache.zookeeper:zookeeper:3.4.6"
+}
+
+
+
+eclipse {
+	wtp {
+		facet {
+			facet name: 'jst.web', type: Facet.FacetType.fixed
+			facet name: 'wst.jsdt.web', type: Facet.FacetType.fixed
+			facet name: 'jst.java', type: Facet.FacetType.fixed
+			facet name: 'jst.web', version: '3.0'
+			facet name: 'jst.java', version: '1.8'
+			facet name: 'wst.jsdt.web', version: '1.0'
+		}
+	}
+}
+//打包设置编码
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
+
+
+//------打jar方法1begin-----
+//依赖编译，然后打包JAR
+task taskJar(type:Jar, dependsOn: compileJava) {
+    from 'build/classes/main'
+    destinationDir = file('build/libs')
+}
+
+//清除上次的编译过的文件
+task clearPj(type:Delete){
+   delete 'libs/DubboServer-0.1.jar'
+   //delete 'build','target'
+   delete 'target'
+}
+
+
+//把JAR复制到目标目录
+task release(type: Copy,dependsOn: [clearPj,taskJar]) {
+    from('build/libs') {
+        include '*.jar'
+    }
+    into ('target')
+}
+//------打jar方法1end-----
+
+
+//------打jar方法2begin-----
+task clearJar(type: Delete) { 
+    delete 'libs/DubboServer-0.1.jar' 
+} 
+
+task makeJar(type:org.gradle.api.tasks.bundling.Jar) {
+    //指定生成的jar名
+    baseName 'DubboServer'
+    //从哪里打包class文件
+    from('build/classes/main')
+    //打包到jar后的目录结构 
+    //into('')
+    //去掉不需要打包的目录和文件 
+    //exclude('test/', 'BuildConfig.class', 'R.class')
+    //exclude('com/tydic/server/dubbo/service/DemoServerImpl.class')
+    //去掉R$开头的文件 
+    //exclude{ it.name.startsWith('R$');} 
+    //去掉R$开头的文件 
+    //exclude{ it.name.endsWith('$Impl$');} 
+} 
+
+makeJar.dependsOn(clearJar, build)
+
+//------打jar方法2end-----
