@@ -14,7 +14,7 @@ public class DemoServerImpl implements DemoServer {
 		log.info("客户端请求："+str);
         str = "Hello " + str + "++2:" + new Date();  
         log.info("服务端:" + str);
-        return str;  
+        return "服务端回应，你的问话是："+str;  
     }  
 
 }
